@@ -7,5 +7,7 @@
         public string Comment { get; set; }
         public string UserId { get; set; }
         public int CourseId { get; set; }
+        public string CourseTitle { get; set; }
+        public string User { get; set; }
     }
 }

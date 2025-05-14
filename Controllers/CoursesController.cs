@@ -13,7 +13,7 @@ namespace COURSEPROJECT.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{StaticData.Admin}")]
+    [Authorize(Roles = $"{StaticData.Moderator}")]
     public class CoursesController(ApplicationDbContext context) : ControllerBase
     {
         private readonly ApplicationDbContext _context = context;
@@ -35,9 +35,9 @@ namespace COURSEPROJECT.Controllers
                 else
                 {
                     courses = courses.Where(course =>
-                        course.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                        course.Description.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                        course.Category.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+                        course.Title.Contains(query) ||
+                        course.Description.Contains(query) ||
+                        course.Category.Name.Contains(query)
                     );
                 }
             }
@@ -84,6 +84,16 @@ namespace COURSEPROJECT.Controllers
         {
             var file = courserequest.Image;
             var course = courserequest.Adapt<Course>();
+
+            var userId = User.FindFirst("id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized("User ID not found in token.");
+            }
+
+
+            course.UserId = userId; 
+
             if (file != null && file.Length > 0)
             {
                 var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
@@ -93,56 +103,75 @@ namespace COURSEPROJECT.Controllers
                 {
                     file.CopyTo(stream);
                 }
+
                 course.Image = fileName;
                 _context.Courses.Add(course);
                 _context.SaveChanges();
 
                 return CreatedAtAction(nameof(GetById), new { id = course.ID }, course);
-
             }
 
-            return BadRequest();
-            
+            return BadRequest("Image file is required.");
         }
+
         [HttpPut("{id}")]
+        
         public IActionResult Update([FromRoute] int id, [FromForm] CourseUpdate courserequest)
         {
-            var courseInDb = _context.Courses.AsNoTracking().FirstOrDefault(course => course.ID == id);
-            var course = courserequest.Adapt<Course>();
-            var file = courserequest.Image;
-            if (courseInDb != null)
+            var userId = User.FindFirst("id")?.Value;
+            if (string.IsNullOrEmpty(userId))
             {
-                if (file != null && file.Length > 0)
-                {
-                    var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Images", fileName);
-
-                    using (var stream = System.IO.File.Create(filePath))
-                    {
-                        file.CopyTo(stream);
-                    }
-                    var OldfilePath = Path.Combine(Directory.GetCurrentDirectory(), "Images", courseInDb.Image);
-                    if (System.IO.File.Exists(OldfilePath))
-                    {
-                        System.IO.File.Delete(OldfilePath);
-                    }
-                    course.Image = fileName;
-
-
-
-
-                }
-                else
-                {
-                    course.Image = courseInDb.Image;
-                }
-                course.ID = id;
-                _context.Courses.Update(course);
-                _context.SaveChanges();
-                return NoContent();
+                return Unauthorized("User ID not found in token.");
             }
-            return NotFound();
+
+
+
+            var courseInDb = _context.Courses.AsNoTracking().FirstOrDefault(c => c.ID == id);
+            if (courseInDb == null)
+            {
+                return NotFound("Course not found.");
+            }
+
+           
+            if (courseInDb.UserId != userId)
+            {
+                return BadRequest("You are not allowed to edit this course.");
+            }
+
+            var course = courserequest.Adapt<Course>();
+            course.ID = id;
+            course.UserId = userId;
+
+            var file = courserequest.Image;
+            if (file != null && file.Length > 0)
+            {
+                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Images", fileName);
+
+                using (var stream = System.IO.File.Create(filePath))
+                {
+                    file.CopyTo(stream);
+                }
+
+                var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "Images", courseInDb.Image);
+                if (System.IO.File.Exists(oldFilePath))
+                {
+                    System.IO.File.Delete(oldFilePath);
+                }
+
+                course.Image = fileName;
+            }
+            else
+            {
+                course.Image = courseInDb.Image;
+            }
+
+            _context.Courses.Update(course);
+            _context.SaveChanges();
+
+            return NoContent();
         }
+
 
 
 

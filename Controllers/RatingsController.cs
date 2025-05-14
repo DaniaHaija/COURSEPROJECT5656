@@ -19,19 +19,19 @@ namespace COURSEPROJECT.Controllers
         private readonly IRatingService ratingService = ratingService;
         private readonly UserManager<ApplicationUser> userManager = userManager;
 
-        [HttpPost("{CourseId}")]
+        [HttpPost("")]
         
-        public async Task <IActionResult> AddRating([FromRoute] int CourseId, [FromBody] RatingRequest ratingRequest )
+        public async Task <IActionResult> AddRating([FromBody] RatingRequest ratingRequest )
         {
-            var appUser = userManager.GetUserId(User);
+           var appUser = User.FindFirst("id").Value;
 
             var Rating = new Rating()
             {
-                CourseId = CourseId,
+                CourseId = ratingRequest. CourseId,
        
                 Comment = ratingRequest.Comment,
                 Score = ratingRequest.Score,
-                UserId=ratingRequest.UserId,
+                UserId=appUser,
 
             };
          var rating=   Rating.Adapt<Rating>();
@@ -46,18 +46,7 @@ namespace COURSEPROJECT.Controllers
        var ratings=   await  ratingService.GetAsync(null,[r => r.User, r => r.Course],true);
             return Ok(ratings.Adapt<IEnumerable<RatingResponse>>());
         }
-        [HttpGet("{id}")]
-
-        [AllowAnonymous]
-        public async Task <IActionResult> GetRatingById(int id)
-        {
-            var rating = await ratingService.GetOneAsync(r => r.ID == id, [r=>r.User,r=>r.Course]);
-            if (rating == null) return NotFound();
-
-            return Ok(rating.Adapt<RatingResponse>());
-          
-
-        }
+        
 
 
 
@@ -69,8 +58,11 @@ namespace COURSEPROJECT.Controllers
         }
         [HttpPut("{id}")]
         public async Task<IActionResult> Update([FromRoute] int id, [FromBody] RatingRequest ratingRequest)
+            
         {
-            var ratingInD = await ratingService.EditAsync(id, ratingRequest.Adapt<Rating>());
+            var appUser = User.FindFirst("id").Value;
+
+            var ratingInD = await ratingService.EditAsync(id,appUser ,ratingRequest.Adapt<Rating>());
 
             if (!ratingInD) return NotFound();
 

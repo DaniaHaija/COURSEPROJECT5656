@@ -32,19 +32,33 @@ namespace COURSEPROJECT.Controllers
         {
             var appUser = User.FindFirst("id").Value;
             var subscription= await subscriptionService.AddSubcription(appUser, CourseId, cancellationToken);
-            var subscriptionResponse = subscription.Adapt<IEnumerable<SubscriptionResponse>>();
+            var subscriptionResponse = subscription.Adapt<SubscriptionResponse>();
 
 
             return Ok(subscriptionResponse);
         }
-        [HttpGet("")]
-        public async Task<IActionResult> GetUserSubscriptionsAsync()
+        [HttpGet("{CourseId}")]
+        [Authorize(Roles = $"{StaticData.Admin}")]
+        public async Task<IActionResult> GetUserSubscriptionsAsync([FromRoute] int CourseId)
         {
             var appUser = User.FindFirst("id").Value;
-            var result= await subscriptionService.GetUserSubscriptionsAsync(appUser);
+
+            var result= await subscriptionService.GetUserSubscriptionsAsync(CourseId);
+
             var resultResponse = result.Adapt<IEnumerable<SubscriptionResponse>>();
             return Ok(resultResponse);  
         }
+        [HttpGet("")]
+        [Authorize(Roles = $"{StaticData.Student}")]
+
+        public async Task<IActionResult> GetUserSubscriptionsAsync()
+        {
+            var userapp = User.FindFirst("id").Value;
+            var result=await subscriptionService.GetUserSubscriptionsUserAsync(userapp);
+            var resultResponse= result.Adapt<IEnumerable<SubscriptionResponse>>();
+            return Ok(resultResponse);
+        }
+
 
     }
 }

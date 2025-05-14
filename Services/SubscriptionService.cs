@@ -31,6 +31,7 @@ namespace COURSEPROJECT.Services.IServices
                 };
 
                 await context.Subscriptions.AddAsync(existingSubscriptionitems);
+                context.SaveChanges();
              
                
 
@@ -40,11 +41,23 @@ namespace COURSEPROJECT.Services.IServices
             return existingSubscriptionitems;
 
         }
-    public async Task<IEnumerable<Subscription>> GetUserSubscriptionsAsync(string UserId)
+   
+       
+            public async Task<IEnumerable<Subscription>> GetUserSubscriptionsAsync(int CourseId)
+            {
+                var subscriptions = await context.Subscriptions
+                    .Where(s => s.CourseId == CourseId ) 
+                    .Include(s => s.User) 
+                    .ToListAsync();
+
+                    return subscriptions;
+               
+            }
+
+        public async Task<IEnumerable<Subscription>> GetUserSubscriptionsUserAsync(string UserId)
         {
-            return await GetAsync();
-
+            var subscriptions=await  context.Subscriptions.Where(s=>s.UserId == UserId).Include(s => s.Course).Include(s=>s.User).ToListAsync();
+            return subscriptions;
         }
-
     }
-}
+    }

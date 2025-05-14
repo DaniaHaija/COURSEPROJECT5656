@@ -5,7 +5,7 @@ namespace COURSEPROJECT.Services
 {
     public interface IRatingService: IService<Rating>
     {
-        Task<bool> EditAsync(int id, Rating rating, CancellationToken cancellationToken = default);
+        Task<bool> EditAsync(int id,string UserId ,Rating rating, CancellationToken cancellationToken = default);
 
     }
 }
