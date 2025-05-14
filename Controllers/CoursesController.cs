@@ -1,7 +1,6 @@
 ﻿using COURSEPROJECT.Data;
 using COURSEPROJECT.Dto.Request;
 using COURSEPROJECT.Dto.Response;
-using COURSEPROJECT.Migrations;
 using COURSEPROJECT.Model;
 using COURSEPROJECT.Utility;
 using Mapster;

@@ -34,7 +34,7 @@ namespace COURSEPROJECT.Controllers
                 ID = coursematerial.ID,
                 CourseId = coursematerial.CourseId,
                 FileUrl = coursematerial.FileUrl?.Split(';').ToList() ?? new List<string>(),
-                Type = coursematerial.Type?.Split(';').ToList() ?? new List<string>()
+               
             }).ToList();
 
             return Ok(response);
@@ -55,7 +55,7 @@ namespace COURSEPROJECT.Controllers
                 ID = coursematerial.ID,
                 CourseId = coursematerial.CourseId,
                 FileUrl = coursematerial.FileUrl?.Split(';').ToList() ?? new List<string>(),
-                Type = coursematerial.Type?.Split(';').ToList() ?? new List<string>()
+               
             };
 
             return Ok(response);
@@ -88,8 +88,7 @@ namespace COURSEPROJECT.Controllers
 
                
                 coursematerial.FileUrl = string.Join(";", fileNames);
-                coursematerial.Type = string.Join(";", coursematerialrequest.Type);
-
+              
                 
                 _context.CourseMaterials.Add(coursematerial);
                 _context.SaveChanges(); 
@@ -142,12 +141,12 @@ namespace COURSEPROJECT.Controllers
                 }
 
                 coursematerial.FileUrl = string.Join(";", newFileNames);
-                coursematerial.Type = string.Join(";", coursematerialrequest.Type ?? new List<string>());
+               
             }
             else
             {
                 coursematerial.FileUrl = coursematerialInDb.FileUrl;
-                coursematerial.Type = coursematerialInDb.Type;
+               
             }
 
             coursematerial.ID = id;

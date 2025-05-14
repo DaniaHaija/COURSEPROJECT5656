@@ -6,7 +6,7 @@ namespace COURSEPROJECT.Dto.Request
     {
        
         public List <IFormFile> FileUrl { get; set; }
-        public List  <string> Type { get; set; }
+      
         public int CourseId { get; set; }
 
        
