@@ -13,7 +13,7 @@ namespace COURSEPROJECT.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{StaticData.Moderator}")]
+    [Authorize(Roles = $"{StaticData.Admin}")]
     public class CourseMaterialsController(ApplicationDbContext context) : ControllerBase
     {
         private readonly ApplicationDbContext _context =context;
