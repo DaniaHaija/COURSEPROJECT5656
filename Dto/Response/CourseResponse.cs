@@ -8,10 +8,10 @@
         public string Image { get; set; }
         public decimal Price { get; set; }
         public int CategoryId { get; set; }
-        public string Categoryname { get; set; }
+        public string CategoryName { get; set; }
 
         public string UserId { get; set; }
         public string User { get; set; }
-        public List<CourseMaterialResponse> CourseMaterials  { get; set; }
+        public List<CourseMaterialResponse> CourseMaterials { get; set; }
     }
 }

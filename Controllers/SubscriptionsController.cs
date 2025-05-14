@@ -8,6 +8,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using System.Threading;
+using Mapster;
+using COURSEPROJECT.Services.IServices;
+using COURSEPROJECT.Dto.Response;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 
 
@@ -28,15 +32,18 @@ namespace COURSEPROJECT.Controllers
         {
             var appUser = User.FindFirst("id").Value;
             var subscription= await subscriptionService.AddSubcription(appUser, CourseId, cancellationToken);
-         
-            return Ok(subscription);
+            var subscriptionResponse = subscription.Adapt<IEnumerable<SubscriptionResponse>>();
+
+
+            return Ok(subscriptionResponse);
         }
         [HttpGet("")]
         public async Task<IActionResult> GetUserSubscriptionsAsync()
         {
             var appUser = User.FindFirst("id").Value;
             var result= await subscriptionService.GetUserSubscriptionsAsync(appUser);
-            return Ok(result);  
+            var resultResponse = result.Adapt<IEnumerable<SubscriptionResponse>>();
+            return Ok(resultResponse);  
         }
 
     }

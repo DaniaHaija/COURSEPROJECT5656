@@ -1,6 +1,7 @@
 ﻿using COURSEPROJECT.Data;
 using COURSEPROJECT.Dto.Request;
 using COURSEPROJECT.Dto.Response;
+using COURSEPROJECT.Migrations;
 using COURSEPROJECT.Model;
 using COURSEPROJECT.Utility;
 using Mapster;
@@ -21,27 +22,41 @@ namespace COURSEPROJECT.Controllers
         [HttpGet("")]
         [AllowAnonymous]
         public IActionResult Get([FromQuery] string? query)
-           
         {
-            IQueryable<Course> courses = _context.Courses.Include(c => c.Category).Include(c => c.User);
+            IQueryable<Course> courses = _context.Courses
+                .Include(c => c.Category)
+                .Include(c => c.User);
 
-            if (query is not null)
+            if (!string.IsNullOrWhiteSpace(query))
             {
-
-                courses=courses.Where(course=>course.Title.Contains(query) || course.Description.Contains(query) || course.Category.Name.Contains(query));
+                if (decimal.TryParse(query, out decimal parsedPrice))
+                {
+                    courses = courses.Where(course => course.Price >= parsedPrice);
+                }
+                else
+                {
+                    courses = courses.Where(course =>
+                        course.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        course.Description.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        course.Category.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+                    );
+                }
             }
+
             var result = courses.ToList();
+
             if (!result.Any())
             {
                 return NotFound();
             }
+
             return Ok(result.Adapt<IEnumerable<CourseResponse>>());
         }
         [HttpGet("{id}")]
         [AllowAnonymous]
         public async  Task<IActionResult> GetById([FromRoute] int id)
         {
-            var course  = await _context.Courses.Include(c=>c.CourseMaterials).FirstOrDefaultAsync(c=>c.ID==id);
+            var course  = await _context.Courses.Include(c=>c.CourseMaterials).Include(c=>c.Category).Include(c => c.User).FirstOrDefaultAsync(c=>c.ID==id);
             if (course == null)
             {
                 return NotFound();
@@ -50,6 +65,21 @@ namespace COURSEPROJECT.Controllers
             return Ok(course.Adapt<CourseResponse>());
 
         }
+        [HttpGet("Moderator")]
+     public async Task <IActionResult> GetCourseModerator()
+
+        {
+       var appUser=  User.FindFirst("id").Value;
+            var courses = await _context.Courses.Include(c => c.User).Include(c =>c.Category).Include(c=>c.CourseMaterials).Where(c => c.UserId == appUser).ToListAsync();
+            if (!courses.Any())
+            {
+                return NotFound();
+            }
+
+            var response = courses.Adapt<IEnumerable<CourseResponse>>();
+            return Ok(response);
+        }
+
         [HttpPost("")]
         public IActionResult Create([FromForm] CourseRequest courserequest)
         {

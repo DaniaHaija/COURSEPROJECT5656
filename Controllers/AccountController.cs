@@ -109,6 +109,8 @@ namespace COURSEPROJECT.Controllers
             {
                var result= await signInManager.PasswordSignInAsync(applictionuser, logInRequest.Password,logInRequest.RememberMe,false);
                 List<Claim> claims = new();
+
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, applictionuser.Id));
                 claims.Add((new("id",applictionuser.Id)));
                 claims.Add(new("username", applictionuser.UserName));
                claims.Add(new("email", applictionuser.Email));
