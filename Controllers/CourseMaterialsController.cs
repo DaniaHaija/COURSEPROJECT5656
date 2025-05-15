@@ -16,7 +16,7 @@ namespace COURSEPROJECT.Controllers
     [Authorize(Roles = $"{StaticData.Moderator}")]
     public class CourseMaterialsController(ApplicationDbContext context) : ControllerBase
     {
-        private readonly ApplicationDbContext _context =context;
+        private readonly ApplicationDbContext _context = context;
         public static List<CourseMaterial> CourseMaterialsList = new List<CourseMaterial>();
 
         [HttpGet("")]
@@ -34,7 +34,7 @@ namespace COURSEPROJECT.Controllers
                 ID = coursematerial.ID,
                 CourseId = coursematerial.CourseId,
                 FileUrl = coursematerial.FileUrl?.Split(';').ToList() ?? new List<string>(),
-               
+
             }).ToList();
 
             return Ok(response);
@@ -55,19 +55,16 @@ namespace COURSEPROJECT.Controllers
                 ID = coursematerial.ID,
                 CourseId = coursematerial.CourseId,
                 FileUrl = coursematerial.FileUrl?.Split(';').ToList() ?? new List<string>(),
-               
+
             };
 
             return Ok(response);
         }
-
         [HttpPost("")]
         public IActionResult Create([FromForm] CourseMaterialRequest coursematerialrequest)
         {
             if (coursematerialrequest.FileUrl != null && coursematerialrequest.FileUrl.Any())
             {
-                var coursematerial = coursematerialrequest.Adapt<CourseMaterial>();
-
                 var fileNames = new List<string>();
 
                 foreach (var file in coursematerialrequest.FileUrl)
@@ -86,21 +83,19 @@ namespace COURSEPROJECT.Controllers
                     }
                 }
 
-               
-                coursematerial.FileUrl = string.Join(";", fileNames);
-              
-                
+                var coursematerial = new CourseMaterial
+                {
+                    CourseId = coursematerialrequest.CourseId,
+                    FileUrl = string.Join(";", fileNames)
+                };
+
                 _context.CourseMaterials.Add(coursematerial);
-                _context.SaveChanges(); 
+                _context.SaveChanges();
                 return CreatedAtAction(nameof(GetById), new { id = coursematerial.ID }, coursematerial);
             }
 
             return BadRequest();
         }
-
-
-       
-
         [HttpPut("{id}")]
         public IActionResult Update([FromRoute] int id, [FromForm] CourseMaterialRequest coursematerialrequest)
         {
@@ -108,12 +103,20 @@ namespace COURSEPROJECT.Controllers
             if (coursematerialInDb == null)
                 return NotFound();
 
-            var coursematerial = coursematerialrequest.Adapt<CourseMaterial>();
             var newFileNames = new List<string>();
 
             if (coursematerialrequest.FileUrl != null && coursematerialrequest.FileUrl.Any())
             {
-                
+                // حذف الملفات القديمة
+                var oldFiles = coursematerialInDb.FileUrl?.Split(';') ?? Array.Empty<string>();
+                foreach (var oldFile in oldFiles)
+                {
+                    var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "Files", oldFile);
+                    if (System.IO.File.Exists(oldFilePath))
+                        System.IO.File.Delete(oldFilePath);
+                }
+
+                // حفظ الملفات الجديدة
                 foreach (var file in coursematerialrequest.FileUrl)
                 {
                     if (file.Length > 0)
@@ -129,27 +132,16 @@ namespace COURSEPROJECT.Controllers
                         newFileNames.Add(fileName);
                     }
                 }
-
-                var oldFiles = coursematerialInDb.FileUrl?.Split(';') ?? Array.Empty<string>();
-                foreach (var oldFile in oldFiles)
-                {
-                    var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "Files", oldFile);
-                    if (System.IO.File.Exists(oldFilePath))
-                    {
-                        System.IO.File.Delete(oldFilePath);
-                    }
-                }
-
-                coursematerial.FileUrl = string.Join(";", newFileNames);
-               
             }
-            else
+
+            var coursematerial = new CourseMaterial
             {
-                coursematerial.FileUrl = coursematerialInDb.FileUrl;
-               
-            }
-
-            coursematerial.ID = id;
+                ID = id,
+                CourseId = coursematerialrequest.CourseId,
+                FileUrl = newFileNames.Any()
+                    ? string.Join(";", newFileNames)
+                    : coursematerialInDb.FileUrl
+            };
 
             _context.CourseMaterials.Update(coursematerial);
             _context.SaveChanges();
@@ -157,23 +149,25 @@ namespace COURSEPROJECT.Controllers
             return NoContent();
         }
 
+
         [HttpDelete("{id}")]
         public IActionResult Delete([FromRoute] int id)
         {
-            var coursematerial= _context.CourseMaterials.Find(id);
-            if(coursematerial == null) { return NotFound();}
+            var coursematerial = _context.CourseMaterials.Find(id);
+            if (coursematerial == null) { return NotFound(); }
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Files", coursematerial.FileUrl);
 
 
             if (System.IO.File.Exists(filePath))
                 System.IO.File.Delete(filePath);
             _context.CourseMaterials.Remove(coursematerial);
-            _context.SaveChanges(); 
+            _context.SaveChanges();
             return NoContent();
         }
 
+
+
+
     }
-      
-       
-    }
+}
 

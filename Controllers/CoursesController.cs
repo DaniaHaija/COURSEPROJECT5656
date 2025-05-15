@@ -53,29 +53,77 @@ namespace COURSEPROJECT.Controllers
         }
         [HttpGet("{id}")]
         [AllowAnonymous]
-        public async  Task<IActionResult> GetById([FromRoute] int id)
+        public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            var course  = await _context.Courses.Include(c=>c.CourseMaterials).Include(c=>c.Category).Include(c => c.User).FirstOrDefaultAsync(c=>c.ID==id);
+            var course = await _context.Courses
+                .Include(c => c.CourseMaterials)
+                .Include(c => c.Category)
+                .Include(c => c.User)
+                .FirstOrDefaultAsync(c => c.ID == id);
+
             if (course == null)
+                return NotFound(new { message = "Course not found" });
+
+            var response = new CourseResponse
             {
-                return NotFound();
-            }
+                ID = course.ID,
+                Title = course.Title,
+                Description = course.Description,
+                Image = course.Image,
+                Price = course.Price,
+                CategoryId = course.CategoryId,
+                CategoryName = course.Category?.Name,
+                UserId = course.UserId,
+                User = course.User?.UserName,
+                CourseMaterials = course.CourseMaterials.Select(m => new CourseMaterialResponse
+                {
+                    ID = m.ID,
+                    CourseId = m.CourseId,
+                    FileUrl = m.FileUrl?.Split(';').ToList() ?? new List<string>(),
 
-            return Ok(course.Adapt<CourseResponse>());
+                }).ToList()
+            };
 
+            return Ok(response);
         }
-        [HttpGet("Moderator")]
-     public async Task <IActionResult> GetCourseModerator()
 
+       
+        [HttpGet("Moderator")]
+        public async Task<IActionResult> GetCourseModerator()
         {
-       var appUser=  User.FindFirst("id").Value;
-            var courses = await _context.Courses.Include(c => c.User).Include(c =>c.Category).Include(c=>c.CourseMaterials).Where(c => c.UserId == appUser).ToListAsync();
+            var appUser = User.FindFirst("id")?.Value;
+
+            var courses = await _context.Courses
+                .Include(c => c.User)
+                .Include(c => c.Category)
+                .Include(c => c.CourseMaterials)
+                .Where(c => c.UserId == appUser)
+                .ToListAsync();
+
             if (!courses.Any())
             {
-                return NotFound();
+                return NotFound(new { message = "لا يوجد كورسات لهذا المستخدم." });
             }
 
-            var response = courses.Adapt<IEnumerable<CourseResponse>>();
+            var response = courses.Select(course => new CourseResponse
+            {
+                ID = course.ID,
+                Title = course.Title,
+                Description = course.Description,
+                Image = course.Image,
+                Price = course.Price,
+                CategoryId = course.CategoryId,
+                CategoryName = course.Category?.Name,
+                UserId = course.UserId,
+                User = course.User?.UserName,
+                CourseMaterials = course.CourseMaterials.Select(cm => new CourseMaterialResponse
+                {
+                    ID = cm.ID,
+                    FileUrl = cm.FileUrl?.Split(';').ToList() ?? new List<string>(),
+                    CourseId = cm.CourseId
+                }).ToList()
+            });
+
             return Ok(response);
         }
 
