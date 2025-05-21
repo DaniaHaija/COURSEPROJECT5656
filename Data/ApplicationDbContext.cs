@@ -26,7 +26,9 @@ namespace COURSEPROJECT.Data
 
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<Subscription> Subscriptions { get; set; }
-
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<CourseFile> CourseFile { get; set;}
+        public DbSet<UserCertificate> UserCertificates { get; set; }
        
 
 

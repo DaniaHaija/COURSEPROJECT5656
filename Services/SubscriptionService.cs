@@ -48,6 +48,7 @@ namespace COURSEPROJECT.Services.IServices
                 var subscriptions = await context.Subscriptions
                     .Where(s => s.CourseId == CourseId ) 
                     .Include(s => s.User) 
+                    .Include(s => s.Course)
                     .ToListAsync();
 
                     return subscriptions;

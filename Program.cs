@@ -11,7 +11,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Stripe;
 using System.Text;
+using Microsoft.Extensions.FileProviders;
+using System.Security.Claims;
 
 namespace COURSEPROJECT
 {
@@ -22,6 +25,9 @@ namespace COURSEPROJECT
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+        
+
+
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -43,9 +49,15 @@ namespace COURSEPROJECT
              options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+            StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
+
             builder.Services.AddScoped<ICategroyService, CategroyService>();
 
-            builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+            builder.Services.AddScoped<COURSEPROJECT.Services.ISubscriptionService, COURSEPROJECT.Services.IServices.SubscriptionService>();
+            builder.Services.AddScoped<IOrderService, OrderService>();
+
+
             builder.Services.AddScoped<IRatingService, RatingService>();
             builder.Services.AddScoped<ICourseService, CourseService>();
 
@@ -58,6 +70,7 @@ namespace COURSEPROJECT
             builder.Services.AddScoped<IDBInitlizer, DBInitlizer>();
 
             builder.Services.AddTransient<IEmailSender, EmailSender>();
+
 
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
@@ -80,6 +93,8 @@ namespace COURSEPROJECT
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("wUTTqk2HZStu8PTAlAz5npa93FRDhW39")),
+                   
+
                 };
             });
 
@@ -98,7 +113,7 @@ namespace COURSEPROJECT
             app.UseHttpsRedirection();
             app.UseCors(MyAllowSpecificOrigins);
 
-
+            app.UseAuthentication(); 
             app.UseAuthorization();
 
 
@@ -106,6 +121,18 @@ namespace COURSEPROJECT
             var scope = app.Services.CreateScope();
             var service = scope.ServiceProvider.GetService<IDBInitlizer>();
             service.initlizerAsync();
+            
+
+app.UseStaticFiles(); // Â–« ··”„«Õ »«·Ê’Ê· ≈·Ï wwwroot »‘ﬂ· «› —«÷Ì
+
+// Â–« „Œ’’ ··”„«Õ »«·Ê’Ê· ≈·Ï „Ã·œ Files
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(Directory.GetCurrentDirectory(), "Files")),
+    RequestPath = "/Files"
+});
+
 
             app.Run();
         }

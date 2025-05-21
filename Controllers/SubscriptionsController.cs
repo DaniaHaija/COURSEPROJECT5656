@@ -43,10 +43,10 @@ namespace COURSEPROJECT.Controllers
         {
             var appUser = User.FindFirst("id").Value;
 
-            var result= await subscriptionService.GetUserSubscriptionsAsync(CourseId);
+            var result = await subscriptionService.GetUserSubscriptionsAsync(CourseId);
 
             var resultResponse = result.Adapt<IEnumerable<SubscriptionResponse>>();
-            return Ok(resultResponse);  
+            return Ok(resultResponse);
         }
         [HttpGet("")]
         [Authorize(Roles = $"{StaticData.Student}")]
@@ -54,8 +54,8 @@ namespace COURSEPROJECT.Controllers
         public async Task<IActionResult> GetUserSubscriptionsAsync()
         {
             var userapp = User.FindFirst("id").Value;
-            var result=await subscriptionService.GetUserSubscriptionsUserAsync(userapp);
-            var resultResponse= result.Adapt<IEnumerable<SubscriptionResponse>>();
+            var result = await subscriptionService.GetUserSubscriptionsUserAsync(userapp);
+            var resultResponse = result.Adapt<IEnumerable<SubscriptionResponse>>();
             return Ok(resultResponse);
         }
 

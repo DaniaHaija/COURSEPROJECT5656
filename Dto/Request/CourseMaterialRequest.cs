@@ -2,13 +2,13 @@
 
 namespace COURSEPROJECT.Dto.Request
 {
-    public class CourseMaterialRequest
+    public class CourseMateriaRequest
     {
-       
-        public List <IFormFile> FileUrl { get; set; }
-      
         public int CourseId { get; set; }
 
-       
+        public List<IFormFile> Files { get; set; } = new List<IFormFile>();
+        public List<string> FileTypes { get; set; } = new List<string>();
+        public DateTime? LiveStartTime { get; set; }
     }
+
 }

@@ -20,148 +20,215 @@ namespace COURSEPROJECT.Controllers
         public static List<CourseMaterial> CourseMaterialsList = new List<CourseMaterial>();
 
         [HttpGet("")]
-        [AllowAnonymous]
+        [Authorize]
         public IActionResult Get()
         {
-            var coursematerials = _context.CourseMaterials.ToList();
-            if (coursematerials == null || !coursematerials.Any())
-            {
+            var courseMaterials = _context.CourseMaterials
+                .Include(cm => cm.CourseFiles)
+                .ToList();
+
+            if (courseMaterials == null || !courseMaterials.Any())
                 return NotFound();
-            }
 
-            var response = coursematerials.Select(coursematerial => new CourseMaterialResponse
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+
+            var responses = courseMaterials.Select(cm => new CourseMaterialResponse
             {
-                ID = coursematerial.ID,
-                CourseId = coursematerial.CourseId,
-                FileUrl = coursematerial.FileUrl?.Split(';').ToList() ?? new List<string>(),
-
+                ID = cm.ID,
+                CourseId = cm.CourseId,
+                LiveStartTime = cm.LiveStartTime,
+                Files = cm.CourseFiles.Select(f => new CourseFile
+                {
+                    ID= f.ID,
+                    FileName = f.FileName,
+                    FileType = f.FileType,
+                    FileUrl = $"{baseUrl}/Files/{f.FileUrl}",
+                    CourseMaterialId = f.CourseMaterialId
+                }).ToList()
             }).ToList();
 
-            return Ok(response);
+            return Ok(responses);
         }
 
         [HttpGet("{id}")]
-        [AllowAnonymous]
+        [Authorize]
         public IActionResult GetById([FromRoute] int id)
         {
-            var coursematerial = _context.CourseMaterials.Find(id);
-            if (coursematerial == null)
-            {
+            var courseMaterial = _context.CourseMaterials
+                .Include(cm => cm.CourseFiles)
+                .FirstOrDefault(cm => cm.ID == id);
+
+            if (courseMaterial == null)
                 return NotFound();
-            }
+
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
 
             var response = new CourseMaterialResponse
             {
-                ID = coursematerial.ID,
-                CourseId = coursematerial.CourseId,
-                FileUrl = coursematerial.FileUrl?.Split(';').ToList() ?? new List<string>(),
-
+                ID = courseMaterial.ID,
+                CourseId = courseMaterial.CourseId,
+                LiveStartTime = courseMaterial.LiveStartTime,
+                Files = courseMaterial.CourseFiles.Select(f => new CourseFile
+                {
+                    ID= f.ID,
+                    FileName = f.FileName,
+                    FileType = f.FileType,
+                    FileUrl = $"{baseUrl}/Files/{f.FileUrl}"
+                }).ToList()
             };
 
             return Ok(response);
         }
+
+        [RequestSizeLimit(100_000_000)]
+
         [HttpPost("")]
-        public IActionResult Create([FromForm] CourseMaterialRequest coursematerialrequest)
+        public IActionResult Create([FromForm] CourseMateriaRequest request)
         {
-            if (coursematerialrequest.FileUrl != null && coursematerialrequest.FileUrl.Any())
+            var UserId = User.FindFirst("id")?.Value;
+
+            if (UserId == null)
+                return Unauthorized();
+
+            if (request.Files == null || !request.Files.Any())
+                return BadRequest("يرجى رفع الملفات.");
+
+            if (request.FileTypes == null || request.FileTypes.Count != request.Files.Count)
+                return BadRequest("عدد الأنواع لا يطابق عدد الملفات.");
+
+            var courseMaterial = new CourseMaterial
             {
-                var fileNames = new List<string>();
-
-                foreach (var file in coursematerialrequest.FileUrl)
-                {
-                    if (file.Length > 0)
-                    {
-                        var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Files", fileName);
-
-                        using (var stream = System.IO.File.Create(filePath))
-                        {
-                            file.CopyTo(stream);
-                        }
-
-                        fileNames.Add(fileName);
-                    }
-                }
-
-                var coursematerial = new CourseMaterial
-                {
-                    CourseId = coursematerialrequest.CourseId,
-                    FileUrl = string.Join(";", fileNames)
-                };
-
-                _context.CourseMaterials.Add(coursematerial);
-                _context.SaveChanges();
-                return CreatedAtAction(nameof(GetById), new { id = coursematerial.ID }, coursematerial);
-            }
-
-            return BadRequest();
-        }
-        [HttpPut("{id}")]
-        public IActionResult Update([FromRoute] int id, [FromForm] CourseMaterialRequest coursematerialrequest)
-        {
-            var coursematerialInDb = _context.CourseMaterials.AsNoTracking().FirstOrDefault(cm => cm.ID == id);
-            if (coursematerialInDb == null)
-                return NotFound();
-
-            var newFileNames = new List<string>();
-
-            if (coursematerialrequest.FileUrl != null && coursematerialrequest.FileUrl.Any())
-            {
-                // حذف الملفات القديمة
-                var oldFiles = coursematerialInDb.FileUrl?.Split(';') ?? Array.Empty<string>();
-                foreach (var oldFile in oldFiles)
-                {
-                    var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "Files", oldFile);
-                    if (System.IO.File.Exists(oldFilePath))
-                        System.IO.File.Delete(oldFilePath);
-                }
-
-                // حفظ الملفات الجديدة
-                foreach (var file in coursematerialrequest.FileUrl)
-                {
-                    if (file.Length > 0)
-                    {
-                        var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Files", fileName);
-
-                        using (var stream = System.IO.File.Create(filePath))
-                        {
-                            file.CopyTo(stream);
-                        }
-
-                        newFileNames.Add(fileName);
-                    }
-                }
-            }
-
-            var coursematerial = new CourseMaterial
-            {
-                ID = id,
-                CourseId = coursematerialrequest.CourseId,
-                FileUrl = newFileNames.Any()
-                    ? string.Join(";", newFileNames)
-                    : coursematerialInDb.FileUrl
+                CourseId = request.CourseId,
+           
+                LiveStartTime =request.LiveStartTime,
             };
 
-            _context.CourseMaterials.Update(coursematerial);
+            for (int i = 0; i < request.Files.Count; i++)
+            {
+                var file = request.Files[i];
+                var fileType = request.FileTypes[i];
+
+                if (file.Length > 0)
+                {
+                    var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Files", fileName);
+
+                    using (var stream = System.IO.File.Create(filePath))
+                    {
+                        file.CopyTo(stream);
+                    }
+
+                    courseMaterial.CourseFiles.Add(new CourseFile
+                    {
+                        FileName = file.FileName,
+                        FileUrl = fileName,
+                        FileType = fileType
+                    });
+                }
+            }
+
+            _context.CourseMaterials.Add(courseMaterial);
             _context.SaveChanges();
 
-            return NoContent();
+            return CreatedAtAction(nameof(GetById), new { id = courseMaterial.ID }, courseMaterial);
         }
+
+        [RequestSizeLimit(100_000_000)] // 100 ميجابايت
+
+        [HttpPut("{id}")]
+        public IActionResult Update([FromRoute] int id, [FromForm] CourseMateriaRequest request)
+        {
+            var courseMaterial = _context.CourseMaterials
+                .Include(cm => cm.CourseFiles)
+                .FirstOrDefault(cm => cm.ID == id);
+
+            if (courseMaterial == null)
+                return NotFound();
+
+
+            var currentUserId = User.FindFirst("id")?.Value;
+
+            if (currentUserId == null)
+                return Unauthorized();
+
+            if (request.Files != null && request.Files.Count > 0)
+            {
+                foreach (var file in courseMaterial.CourseFiles)
+                {
+                    var oldPath = Path.Combine(Directory.GetCurrentDirectory(), "Files", file.FileUrl);
+                    if (System.IO.File.Exists(oldPath))
+                        System.IO.File.Delete(oldPath);
+                }
+
+                _context.CourseFile.RemoveRange(courseMaterial.CourseFiles);
+                courseMaterial.CourseFiles.Clear();
+
+                for (int i = 0; i < request.Files.Count; i++)
+                {
+                    var file = request.Files[i];
+                    var fileType = request.FileTypes[i];
+
+                    var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Files", fileName);
+
+                    using (var stream = System.IO.File.Create(filePath))
+                    {
+                        file.CopyTo(stream);
+                    }
+
+                    courseMaterial.CourseFiles.Add(new CourseFile
+                    {
+                        FileName = file.FileName,
+                        FileType = fileType,
+                        FileUrl = fileName
+                    });
+                }
+            }
+
+            courseMaterial.CourseId = request.CourseId;
+            courseMaterial.LiveStartTime = request.LiveStartTime;
+
+            _context.SaveChanges();
+
+            var response = new CourseMaterialResponse
+            {
+                ID = courseMaterial.ID,
+                CourseId = courseMaterial.CourseId,
+                LiveStartTime = courseMaterial.LiveStartTime,
+                Files = courseMaterial.CourseFiles.Select(f => new CourseFile
+                {
+                    FileName = f.FileName,
+                    FileType = f.FileType,
+                    FileUrl = Url.Content($"~/Files/{f.FileUrl}")
+                }).ToList()
+            };
+
+            return Ok(response);
+        }
+
 
 
         [HttpDelete("{id}")]
         public IActionResult Delete([FromRoute] int id)
         {
-            var coursematerial = _context.CourseMaterials.Find(id);
-            if (coursematerial == null) { return NotFound(); }
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Files", coursematerial.FileUrl);
+            var courseMaterial = _context.CourseMaterials
+                .Include(cm => cm.CourseFiles)
+                .FirstOrDefault(cm => cm.ID == id);
 
+            if (courseMaterial == null)
+                return NotFound();
 
-            if (System.IO.File.Exists(filePath))
-                System.IO.File.Delete(filePath);
-            _context.CourseMaterials.Remove(coursematerial);
+            foreach (var file in courseMaterial.CourseFiles)
+            {
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Files", file.FileUrl);
+                if (System.IO.File.Exists(filePath))
+                    System.IO.File.Delete(filePath);
+            }
+
+            _context.CourseFile.RemoveRange(courseMaterial.CourseFiles);
+            _context.CourseMaterials.Remove(courseMaterial);
             _context.SaveChanges();
+
             return NoContent();
         }
 

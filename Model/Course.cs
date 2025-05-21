@@ -7,10 +7,15 @@
         public string Description { get; set; }
         public string Image { get; set; }
         public decimal Price { get; set; }
-        public int CategoryId { get; set; } 
-    
+        public int CategoryId { get; set; }
+        public bool IsApproved { get; set; } = false;
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+
+
         public string UserId { get; set; }
         public Category Category { get; set; }
+
         public IEnumerable<CourseMaterial> CourseMaterials { get; set;}
         public ApplicationUser User { get; set; }
         public ICollection<Subscription> Subscriptions { get; set; }
