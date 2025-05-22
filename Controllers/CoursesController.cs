@@ -181,7 +181,8 @@ namespace COURSEPROJECT.Controllers
                 return NotFound("User not found.");
             }
 
-            if ((bool)!userapp.IsApproved)
+            if (userapp.IsApproved != true)
+
             {
                 return BadRequest("You are not approved by the admin to add courses.");
             }
