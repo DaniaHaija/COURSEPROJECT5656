@@ -213,7 +213,7 @@ namespace COURSEPROJECT.Controllers
 
                 // 2. جلب المستخدمين غير المعتمدين فقط
                 var pendingModerators = moderators
-                    .Where(u => u.IsApproved.HasValue && u.IsApproved.Value == false)
+                    .Where(u => u.IsApproved == false)
                     .ToList();
 
                 // 3. الحصول على معرفات المستخدمين
@@ -254,13 +254,13 @@ namespace COURSEPROJECT.Controllers
 
         [HttpPut("ApprovegModerator/{id}")]
         [Authorize(Roles = $"{StaticData.Admin}")]
-        public IActionResult ApprovegModerator([FromRoute] string id)
+        public async Task <IActionResult> ApprovegModerator([FromRoute] string id)
         {
-            var user=context.Users.FirstOrDefault(u => u.Id == id);
+            var user=  await context.Users.FirstOrDefaultAsync(u => u.Id == id);
             if (user == null) return NotFound(); else
             {
                 user.IsApproved = true;
-                 context.SaveChangesAsync();
+               await   context.SaveChangesAsync();
                 return Ok(new { message = "تم اعتماد المشرف" });
             }
 
