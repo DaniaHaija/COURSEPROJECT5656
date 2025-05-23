@@ -66,7 +66,7 @@ namespace COURSEPROJECT.Controllers
             return Ok(mappCourse);
         }
         [HttpGet("{id}")]
-        [Authorize]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
             var course = await _context.Courses

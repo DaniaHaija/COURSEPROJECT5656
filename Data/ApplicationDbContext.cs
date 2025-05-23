@@ -30,6 +30,7 @@ namespace COURSEPROJECT.Data
         public DbSet<CourseFile> CourseFile { get; set;}
         public DbSet<UserCertificate> UserCertificates { get; set; }
        
+       
 
 
 

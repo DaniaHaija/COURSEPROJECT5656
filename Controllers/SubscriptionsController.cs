@@ -49,7 +49,7 @@ namespace COURSEPROJECT.Controllers
             return Ok(resultResponse);
         }
         [HttpGet("")]
-        [Authorize(Roles = $"{StaticData.Student}")]
+        [Authorize]
 
         public async Task<IActionResult> GetUserSubscriptionsAsync()
         {
