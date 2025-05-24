@@ -58,6 +58,21 @@ namespace COURSEPROJECT.Controllers
             var resultResponse = result.Adapt<IEnumerable<SubscriptionResponse>>();
             return Ok(resultResponse);
         }
+        [HttpGet("single/{CourseId}")]
+        [Authorize]
+        public async Task <IActionResult> GetOneSubscription([FromRoute]int CourseId) 
+        
+        {
+            var userapp = User.FindFirst("id").Value;
+            if(userapp == null) { return NotFound(); }
+            else
+            {
+                var resualt = await subscriptionService.GetOneSubscriptionAsync(CourseId,userapp);
+                if (resualt == null) { return NotFound(); }
+                return Ok(resualt);
+            }
+           
+        }
 
 
     }

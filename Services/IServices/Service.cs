@@ -68,5 +68,10 @@ namespace COURSEPROJECT.Services.IServices
             await _context.SaveChangesAsync(cancellationToken);
             return true;
         }
+        public async Task<int> CommitAsync(CancellationToken cancellationToken = default)
+        {
+            return await _context.SaveChangesAsync(cancellationToken);
+
+        }
     }
 }

@@ -15,6 +15,8 @@ using Stripe;
 using System.Text;
 using Microsoft.Extensions.FileProviders;
 using System.Security.Claims;
+using COURSEPROJECT.Services.IServices;
+
 
 namespace COURSEPROJECT
 {
@@ -56,6 +58,7 @@ namespace COURSEPROJECT
 
             builder.Services.AddScoped<COURSEPROJECT.Services.ISubscriptionService, COURSEPROJECT.Services.IServices.SubscriptionService>();
             builder.Services.AddScoped<IOrderService, OrderService>();
+            builder.Services.AddScoped<IDiscount, Services.DiscountService>();
 
 
             builder.Services.AddScoped<IRatingService, RatingService>();

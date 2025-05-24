@@ -60,5 +60,12 @@ namespace COURSEPROJECT.Services.IServices
             var subscriptions=await  context.Subscriptions.Where(s=>s.UserId == UserId).Include(s => s.Course).Include(s=>s.User).ToListAsync();
             return subscriptions;
         }
+        public async Task<Subscription> GetOneSubscriptionAsync(int CourseId , string UserId)
+        {
+            var subscriptions = await context.Subscriptions.FirstOrDefaultAsync(s => s.CourseId == CourseId &&  s.UserId == UserId);
+            return subscriptions;
+        }
+
+
     }
     }

@@ -25,9 +25,10 @@ namespace COURSEPROJECT.Controllers
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
             var viewModel = new DashboardViewModel
             {
-                 
-            UsersCount = context.Users.Count(),
+
+                UsersCount = context.Users.Count(),
                 CoursesCount = context.Courses.Count(),
+                Earning = context.Orders.Sum(o => o.FinalPrice),
                 TopCourses = context.Courses
     .Include(c => c.Subscriptions)
     .Include(c => c.Category)

@@ -8,6 +8,7 @@ namespace COURSEPROJECT.Services
          Task<Subscription> AddSubcription(string UserId, int CourseId, CancellationToken cancellationToken);
         Task<IEnumerable<Subscription>> GetUserSubscriptionsAsync( int CourseId);
         Task<IEnumerable<Subscription>> GetUserSubscriptionsUserAsync(String UserId);
+        Task<Subscription> GetOneSubscriptionAsync(int CourseId, string UserId);
 
     }
 }
