@@ -16,7 +16,7 @@ namespace COURSEPROJECT.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-  
+
     public class CoursesController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IEmailSender emailSender) : ControllerBase
     {
         private readonly ApplicationDbContext _context = context;
@@ -71,7 +71,7 @@ namespace COURSEPROJECT.Controllers
                     CategoryId = r.CategoryId,
                     CategoryName = r.Category?.Name,
                     UserId = r.UserId,
-                    UserName = r.User?.UserName, // 🔐 حماية من null
+                    user = r.User?.UserName, // 🔐 حماية من null
                     CourseMaterials = r.CourseMaterials?.Select(cm => new CourseMaterialResponse
                     {
                         ID = cm.ID,
@@ -93,7 +93,7 @@ namespace COURSEPROJECT.Controllers
 
             return Ok(mappCourse);
         }
-            [HttpGet("{id}")]
+        [HttpGet("{id}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
@@ -115,12 +115,12 @@ namespace COURSEPROJECT.Controllers
                 Image = string.IsNullOrEmpty(course.Image) ? null : $"{baseUrl}/Images/{course.Image}",
 
                 Price = course.Price,
-                StartDate= course.StartDate,
-                EndDate= course.EndDate,
+                StartDate = course.StartDate,
+                EndDate = course.EndDate,
                 CategoryId = course.CategoryId,
                 CategoryName = course.Category?.Name,
                 UserId = course.UserId,
-                UserName = course.User.UserName,
+                user = course.User.UserName,
                 CourseMaterials = course.CourseMaterials.Select(cm => new CourseMaterialResponse
                 {
                     ID = cm.ID,
@@ -136,7 +136,7 @@ namespace COURSEPROJECT.Controllers
                     }).ToList()
                 }).ToList()
             };
-        
+
 
             return Ok(response);
         }
@@ -177,7 +177,7 @@ namespace COURSEPROJECT.Controllers
                 CategoryId = course.CategoryId,
                 CategoryName = course.Category?.Name,
                 UserId = course.UserId,
-                UserName = course.User.UserName,
+                user = course.User.UserName,
                 CourseMaterials = course.CourseMaterials.Select(cm => new CourseMaterialResponse
                 {
                     ID = cm.ID,
@@ -343,15 +343,50 @@ namespace COURSEPROJECT.Controllers
         [Authorize(Roles = $"{StaticData.Admin}")]
         public IActionResult GetPendingCourses()
         {
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
 
-            var courses = _context.Courses.Where(c => !c.IsApproved).ToList();
+            var courses = _context.Courses
+                .Include(c => c.User)
+                .Include(c => c.Category)
+                .Include(c => c.CourseMaterials)
+                    .ThenInclude(cm => cm.CourseFiles)
+                .Where(c => !c.IsApproved)
+                .ToList()
+                .Select(c => new CourseResponse
+                {
+                    ID = c.ID,
+                    Title = c.Title,
+                    Description = c.Description,
+                    Image = string.IsNullOrEmpty(c.Image) ? null : $"{baseUrl}/Images/{c.Image}",
+                    Price = c.Price,
+                    StartDate = c.StartDate,
+                    EndDate = c.EndDate,
+                    CategoryId = c.CategoryId,
+                    CategoryName = c.Category?.Name,
+                    UserId = c.UserId,
+                    user = c.User?.UserName,
+                    CourseMaterials = c.CourseMaterials?.Select(cm => new CourseMaterialResponse
+                    {
+                        ID = cm.ID,
+                        CourseId = cm.CourseId,
+                        LiveStartTime = cm.LiveStartTime,
+                        Files = cm.CourseFiles?.Select(f => new CourseFile
+                        {
+                            ID = f.ID,
+                            FileName = f.FileName,
+                            FileType = f.FileType,
+                            FileUrl = $"{baseUrl}/Files/{f.FileUrl}",
+                            CourseMaterialId = f.CourseMaterialId
+                        }).ToList() ?? new List<CourseFile>()
+                    }).ToList() ?? new List<CourseMaterialResponse>()
+                }).ToList();
+
             return Ok(courses);
-
-
-
-
         }
-       
+
+
+
+
         [HttpPut("ApproveCourse/{id}")]
         [Authorize(Roles = $"{StaticData.Admin}")]
         public async Task<IActionResult> ApproveCourse( [FromRoute] int id)
