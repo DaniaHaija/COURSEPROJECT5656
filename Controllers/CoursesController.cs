@@ -46,26 +46,54 @@ namespace COURSEPROJECT.Controllers
                     );
                 }
             }
-      
 
 
-         
 
-            if (courses is null)
+
+            if (courses == null)
             {
                 return NotFound();
             }
-            var baseUrl = $"{Request.Scheme}://{Request.Host}/Images/";
-            var mappCourse = courses.ToList().Select(r =>
+
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+
+            var mappCourse = courses.ToList().Where(r => r != null).Select(r =>
             {
-                var dto = r.Adapt<CourseResponse>();
-                dto.Image = baseUrl + r.Image;
+                var dto = new CourseResponse
+                {
+                    ID = r.ID,
+                    Title = r.Title,
+                    Description = r.Description,
+                    Image = string.IsNullOrEmpty(r.Image) ? null : $"{baseUrl}/Images/{r.Image}",
+                    Price = r.Price,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                    CategoryId = r.CategoryId,
+                    CategoryName = r.Category?.Name,
+                    UserId = r.UserId,
+                    UserName = r.User?.UserName, // 🔐 حماية من null
+                    CourseMaterials = r.CourseMaterials?.Select(cm => new CourseMaterialResponse
+                    {
+                        ID = cm.ID,
+                        CourseId = cm.CourseId,
+                        LiveStartTime = cm.LiveStartTime,
+                        Files = cm.CourseFiles?.Select(f => new CourseFile
+                        {
+                            ID = f.ID,
+                            FileName = f.FileName,
+                            FileType = f.FileType,
+                            FileUrl = $"{baseUrl}/Files/{f.FileUrl}",
+                            CourseMaterialId = f.CourseMaterialId
+                        }).ToList() ?? new List<CourseFile>() // 🔐 حماية من null
+                    }).ToList() ?? new List<CourseMaterialResponse>() // 🔐 حماية من null
+                };
+
                 return dto;
             });
 
             return Ok(mappCourse);
         }
-        [HttpGet("{id}")]
+            [HttpGet("{id}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
@@ -92,7 +120,7 @@ namespace COURSEPROJECT.Controllers
                 CategoryId = course.CategoryId,
                 CategoryName = course.Category?.Name,
                 UserId = course.UserId,
-                User = course.User?.UserName,
+                UserName = course.User.UserName,
                 CourseMaterials = course.CourseMaterials.Select(cm => new CourseMaterialResponse
                 {
                     ID = cm.ID,
@@ -148,7 +176,7 @@ namespace COURSEPROJECT.Controllers
                 CategoryId = course.CategoryId,
                 CategoryName = course.Category?.Name,
                 UserId = course.UserId,
-                User = course.User?.UserName,
+                UserName = course.User.UserName,
                 CourseMaterials = course.CourseMaterials.Select(cm => new CourseMaterialResponse
                 {
                     ID = cm.ID,
