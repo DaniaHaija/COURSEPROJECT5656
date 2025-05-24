@@ -84,7 +84,8 @@ namespace COURSEPROJECT.Controllers
                 ID = course.ID,
                 Title = course.Title,
                 Description = course.Description,
-                Image = course.Image,
+                Image = string.IsNullOrEmpty(course.Image) ? null : $"{baseUrl}/Images/{course.Image}",
+
                 Price = course.Price,
                 StartDate= course.StartDate,
                 EndDate= course.EndDate,
@@ -139,7 +140,8 @@ namespace COURSEPROJECT.Controllers
                 ID = course.ID,
                 Title = course.Title,
                 Description = course.Description,
-                Image = course.Image,
+                Image = !string.IsNullOrWhiteSpace(course.Image) ? $"{baseUrl}{course.Image}" : null,
+
                 Price = course.Price,
                 StartDate = course.StartDate,
                 EndDate = course.EndDate,
