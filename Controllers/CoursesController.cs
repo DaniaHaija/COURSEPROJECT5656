@@ -160,7 +160,8 @@ namespace COURSEPROJECT.Controllers
             {
                 return NotFound(new { message = "لا يوجد كورسات لهذا المستخدم." });
             }
-            var baseUrl = $"{Request.Scheme}://{Request.Host}/Images/";
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+
 
 
             var response = courses.Select(course => new CourseResponse
@@ -168,7 +169,7 @@ namespace COURSEPROJECT.Controllers
                 ID = course.ID,
                 Title = course.Title,
                 Description = course.Description,
-                Image = !string.IsNullOrWhiteSpace(course.Image) ? $"{baseUrl}{course.Image}" : null,
+                Image = string.IsNullOrEmpty(course.Image) ? null : $"{baseUrl}/Images/{course.Image}",
 
                 Price = course.Price,
                 StartDate = course.StartDate,
