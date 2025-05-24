@@ -49,7 +49,7 @@ namespace COURSEPROJECT.Controllers
                         CategoryId=c.CategoryId,
                         CategoryName=c.Category.Name,
                         UserId=c.UserId,
-                        user = c.User.UserName,
+                        User = c.User.UserName,
                         CourseMaterials = c.CourseMaterials.Select(cm => new CourseMaterialResponse
                         {
                             ID = cm.ID,

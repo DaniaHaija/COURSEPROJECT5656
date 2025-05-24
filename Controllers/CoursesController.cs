@@ -71,7 +71,7 @@ namespace COURSEPROJECT.Controllers
                     CategoryId = r.CategoryId,
                     CategoryName = r.Category?.Name,
                     UserId = r.UserId,
-                    user = r.User?.UserName, // 🔐 حماية من null
+                    User = r.User?.UserName, // 🔐 حماية من null
                     CourseMaterials = r.CourseMaterials?.Select(cm => new CourseMaterialResponse
                     {
                         ID = cm.ID,
@@ -120,7 +120,7 @@ namespace COURSEPROJECT.Controllers
                 CategoryId = course.CategoryId,
                 CategoryName = course.Category?.Name,
                 UserId = course.UserId,
-                user = course.User.UserName,
+                User = course.User.UserName,
                 CourseMaterials = course.CourseMaterials.Select(cm => new CourseMaterialResponse
                 {
                     ID = cm.ID,
@@ -177,7 +177,7 @@ namespace COURSEPROJECT.Controllers
                 CategoryId = course.CategoryId,
                 CategoryName = course.Category?.Name,
                 UserId = course.UserId,
-                user = course.User.UserName,
+                User = course.User.UserName,
                 CourseMaterials = course.CourseMaterials.Select(cm => new CourseMaterialResponse
                 {
                     ID = cm.ID,
@@ -364,7 +364,7 @@ namespace COURSEPROJECT.Controllers
                     CategoryId = c.CategoryId,
                     CategoryName = c.Category?.Name,
                     UserId = c.UserId,
-                    user = c.User?.UserName,
+                    User = c.User?.UserName,
                     CourseMaterials = c.CourseMaterials?.Select(cm => new CourseMaterialResponse
                     {
                         ID = cm.ID,
