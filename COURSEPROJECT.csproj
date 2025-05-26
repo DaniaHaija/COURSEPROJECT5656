@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <Folder Include="Files\" />
-    <Folder Include="Images\" />
+    <Folder Include="images\" />
     <Folder Include="uplode\" />
   </ItemGroup>
 

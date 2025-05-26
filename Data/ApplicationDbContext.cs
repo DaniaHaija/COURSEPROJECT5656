@@ -22,7 +22,7 @@ namespace COURSEPROJECT.Data
         public DbSet<Course> Courses { get; set; }
         public DbSet<CourseMaterial> CourseMaterials { get; set; }
         public DbSet<Discount> Discounts { get; set; }
-        public DbSet<Payment> Payments { get; set; }
+       
 
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<Subscription> Subscriptions { get; set; }

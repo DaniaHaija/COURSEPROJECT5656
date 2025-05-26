@@ -64,7 +64,7 @@ namespace COURSEPROJECT.Controllers
                     ID = r.ID,
                     Title = r.Title,
                     Description = r.Description,
-                    Image = string.IsNullOrEmpty(r.Image) ? null : $"{baseUrl}/Images/{r.Image}",
+                    Image = string.IsNullOrEmpty(r.Image) ? null : $"{baseUrl}/images/{r.Image}",
                     Price = r.Price,
                     StartDate = r.StartDate,
                     EndDate = r.EndDate,
@@ -112,7 +112,7 @@ namespace COURSEPROJECT.Controllers
                 ID = course.ID,
                 Title = course.Title,
                 Description = course.Description,
-                Image = string.IsNullOrEmpty(course.Image) ? null : $"{baseUrl}/Images/{course.Image}",
+                Image = string.IsNullOrEmpty(course.Image) ? null : $"{baseUrl}/images/{course.Image}",
 
                 Price = course.Price,
                 StartDate = course.StartDate,
@@ -169,7 +169,7 @@ namespace COURSEPROJECT.Controllers
                 ID = course.ID,
                 Title = course.Title,
                 Description = course.Description,
-                Image = string.IsNullOrEmpty(course.Image) ? null : $"{baseUrl}/Images/{course.Image}",
+                Image = string.IsNullOrEmpty(course.Image) ? null : $"{baseUrl}/images/{course.Image}",
 
                 Price = course.Price,
                 StartDate = course.StartDate,
@@ -229,7 +229,7 @@ namespace COURSEPROJECT.Controllers
             course.UserId = userId;
 
             var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Images", fileName);
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images", fileName);
 
             using (var stream = System.IO.File.Create(filePath))
             {
@@ -293,14 +293,14 @@ namespace COURSEPROJECT.Controllers
             if (file != null && file.Length > 0)
             {
                 var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Images", fileName);
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images", fileName);
 
                 using (var stream = System.IO.File.Create(filePath))
                 {
                     file.CopyTo(stream);
                 }
 
-                var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "Images", courseInDb.Image);
+                var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "images", courseInDb.Image);
                 if (System.IO.File.Exists(oldFilePath))
                 {
                     System.IO.File.Delete(oldFilePath);
@@ -329,7 +329,7 @@ namespace COURSEPROJECT.Controllers
         {
             var course = _context.Courses.Find(id);
             if (course == null) { return NotFound(); }
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Images", course.Image);
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images", course.Image);
 
 
             if (System.IO.File.Exists(filePath))
@@ -357,7 +357,7 @@ namespace COURSEPROJECT.Controllers
                     ID = c.ID,
                     Title = c.Title,
                     Description = c.Description,
-                    Image = string.IsNullOrEmpty(c.Image) ? null : $"{baseUrl}/Images/{c.Image}",
+                    Image = string.IsNullOrEmpty(c.Image) ? null : $"{baseUrl}/images/{c.Image}",
                     Price = c.Price,
                     StartDate = c.StartDate,
                     EndDate = c.EndDate,

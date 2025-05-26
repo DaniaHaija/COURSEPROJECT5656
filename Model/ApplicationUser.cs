@@ -19,7 +19,8 @@ namespace COURSEPROJECT.Model
         public UserType UserType { get; set; }
 
         public ICollection<Course> Courses { get; set; }
-         public ICollection<Payment> Payments { get; set; }
+       
+
         public ICollection<Subscription>Subscriptions { get; set; }
         public ICollection<Rating> Ratings { get; set; }
   

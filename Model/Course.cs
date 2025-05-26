@@ -15,6 +15,7 @@
 
         public string UserId { get; set; }
         public Category Category { get; set; }
+      
 
         public IEnumerable<CourseMaterial> CourseMaterials { get; set;}
         public ApplicationUser User { get; set; }
