@@ -15,7 +15,12 @@ namespace COURSEPROJECT.Services.IServices
         }
 
         public async Task<Subscription> AddSubcription(string UserId,int CourseId,CancellationToken cancellationToken)
+
         {
+            var course = await context.Courses.FirstOrDefaultAsync(c => c.ID == CourseId);
+            if (course == null ||! course.IsApproved) { return null; }
+           
+
             var existingSubscriptionitems= await context.Subscriptions.FirstOrDefaultAsync(s => s.UserId == UserId && s.CourseId == CourseId);
             if (existingSubscriptionitems != null)
             {
@@ -31,9 +36,10 @@ namespace COURSEPROJECT.Services.IServices
                 };
 
                 await context.Subscriptions.AddAsync(existingSubscriptionitems);
-                context.SaveChanges();
-             
-               
+                await context.SaveChangesAsync(cancellationToken);
+
+
+
 
 
 
@@ -60,12 +66,27 @@ namespace COURSEPROJECT.Services.IServices
             var subscriptions=await  context.Subscriptions.Where(s=>s.UserId == UserId).Include(s => s.Course).Include(s=>s.User).ToListAsync();
             return subscriptions;
         }
-        public async Task<Subscription> GetOneSubscriptionAsync(int CourseId , string UserId)
+        public async Task<Subscription?> GetOneSubscriptionAsync(int courseId, string userId)
         {
-            var subscriptions = await context.Subscriptions.FirstOrDefaultAsync(s => s.CourseId == CourseId &&  s.UserId == UserId);
-            return subscriptions;
+         
+            var existingSubscriptionitems = await context.Subscriptions.FirstOrDefaultAsync(s => s.UserId == userId && s.CourseId == courseId);
+
+           
+                 return existingSubscriptionitems;
+            
+        
+
+
+
+
+
+           
+        }
+
+
+        
         }
 
 
     }
-    }
+    

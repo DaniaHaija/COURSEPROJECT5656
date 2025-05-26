@@ -12,6 +12,7 @@ using COURSEPROJECT.Utility;
 using Microsoft.AspNetCore.Identity;
 using CloudinaryDotNet;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using System.Threading;
 
 
 namespace COURSEPROJECT.Controllers
@@ -109,11 +110,16 @@ namespace COURSEPROJECT.Controllers
 
         [HttpGet("success/{OrderId}")]
         [AllowAnonymous]
-        public async Task <IActionResult> Success([FromRoute] int OrderId)
+        public async Task <IActionResult> Success([FromRoute] int OrderId,CancellationToken cancellationToken)
         {
             var order= await orderService.GetOneAsync(o=>o.Id==OrderId);
             var applicationuser=await  userManager.FindByIdAsync(order.UserId);
-            order.orderStatus = OrderStatus.Approved;
+            var subscription = await subscriptionService.GetOneSubscriptionAsync(order.CourseId, order.UserId);
+            if (subscription == null)
+            {
+                await subscriptionService.AddSubcription(order.UserId, order.CourseId, cancellationToken);
+            }
+                order.orderStatus = OrderStatus.Approved;
             var service = new SessionService();
             var session =service.Get(order.SessionId);
             order.TransactionId = session.PaymentIntentId;
