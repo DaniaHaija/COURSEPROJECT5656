@@ -71,7 +71,7 @@ namespace COURSEPROJECT.Controllers
                     CategoryId = r.CategoryId,
                     CategoryName = r.Category?.Name,
                     UserId = r.UserId,
-                    User = r.User?.UserName, // 🔐 حماية من null
+                    User = r.User?.UserName,
                     CourseMaterials = r.CourseMaterials?.Select(cm => new CourseMaterialResponse
                     {
                         ID = cm.ID,
@@ -84,8 +84,8 @@ namespace COURSEPROJECT.Controllers
                             FileType = f.FileType,
                             FileUrl = $"{baseUrl}/Files/{f.FileUrl}",
                             CourseMaterialId = f.CourseMaterialId
-                        }).ToList() ?? new List<CourseFile>() // 🔐 حماية من null
-                    }).ToList() ?? new List<CourseMaterialResponse>() // 🔐 حماية من null
+                        }).ToList() ?? new List<CourseFile>() 
+                    }).ToList() ?? new List<CourseMaterialResponse>() 
                 };
 
                 return dto;
