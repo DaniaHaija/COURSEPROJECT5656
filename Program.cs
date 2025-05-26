@@ -126,22 +126,21 @@ namespace COURSEPROJECT
             service.initlizerAsync();
             
 
-app.UseStaticFiles(); // Â–« ··”„«Õ »«·Ê’Ê· ≈·Ï wwwroot »‘ﬂ· «› —«÷Ì
+app.UseStaticFiles(); 
 
-// Â–« „Œ’’ ··”„«Õ »«·Ê’Ê· ≈·Ï „Ã·œ Files
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(
         Path.Combine(Directory.GetCurrentDirectory(), "Files")),
     RequestPath = "/Files"
 });
+            app.UseStaticFiles();
             app.UseStaticFiles(new StaticFileOptions
             {
                 FileProvider = new PhysicalFileProvider(
-                    Path.Combine(Directory.GetCurrentDirectory(), "Images")),
-                RequestPath = "/Images"
+                 Path.Combine(Directory.GetCurrentDirectory(), "images")),
+                RequestPath = "/images"
             });
-
 
             app.Run();
         }
