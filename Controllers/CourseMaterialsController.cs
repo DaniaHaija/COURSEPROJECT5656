@@ -17,7 +17,6 @@ namespace COURSEPROJECT.Controllers
     public class CourseMaterialsController(ApplicationDbContext context) : ControllerBase
     {
         private readonly ApplicationDbContext _context = context;
-        public static List<CourseMaterial> CourseMaterialsList = new List<CourseMaterial>();
 
         [HttpGet("")]
         [Authorize]

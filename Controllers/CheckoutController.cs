@@ -44,19 +44,20 @@ namespace COURSEPROJECT.Controllers
             decimal finalPrice = course.Price;
             COURSEPROJECT.Model.Discount? discount = null;
 
-
             if (!string.IsNullOrEmpty(discountCode))
             {
                 discount = await context.Discounts
                     .FirstOrDefaultAsync(d => d.Code == discountCode && d.ExpiryDate > DateTime.Now);
-          if(discount == null)
-                {
-                    finalPrice = 0;
-                }
-          finalPrice=discount.Value - course.Price;
-          
 
+                if (discount != null)
+                {
+                    finalPrice = course.Price - discount.Value;
+
+                    if (finalPrice < 0)
+                        finalPrice = 0;
+                }
             }
+
 
             Order order = new()
             {
