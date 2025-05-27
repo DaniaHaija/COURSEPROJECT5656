@@ -15,6 +15,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using COURSEPROJECT.Data;
 using COURSEPROJECT.Dto;
+using COURSEPROJECT.Dto.Response;
 
 
 
@@ -31,14 +32,16 @@ namespace COURSEPROJECT.Controllers
         private readonly IEmailSender emailSender;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly ApplicationDbContext context;
+        private readonly CloudinaryService cloudinaryService;
 
-        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager ,IEmailSender emailSender,RoleManager<IdentityRole>roleManager,ApplicationDbContext context)
+        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager ,IEmailSender emailSender,RoleManager<IdentityRole>roleManager,ApplicationDbContext context, CloudinaryService cloudinaryService)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.emailSender = emailSender;
             this.roleManager = roleManager;
             this.context = context;
+            this.cloudinaryService = cloudinaryService;
         }
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromForm] RegisterRequest register)
@@ -86,18 +89,12 @@ namespace COURSEPROJECT.Controllers
 
                         foreach (var file in register.CertificateFiles)
                         {
-                            var uniqueFileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-                            var filePath = Path.Combine("uplode", uniqueFileName);
-
-                            using (var stream = new FileStream(filePath, FileMode.Create))
-                            {
-                                await file.CopyToAsync(stream);
-                            }
+                            var file1 = await cloudinaryService.UploadFileAsync(file);
 
                          context.UserCertificates.Add(new UserCertificate
                             {
                                 FileName = file.FileName,
-                                FileUrl = uniqueFileName,
+                                FileUrl = file1,
                                 UploadedAt = DateTime.UtcNow,
                                 UserId = applicationuser.Id
                             });
@@ -184,6 +181,7 @@ namespace COURSEPROJECT.Controllers
             var user = context.Users.Include(u=> u.Certificates).FirstOrDefault(u => u.Id == userapp);
             if (user == null)
                 return NotFound();
+           
 
             return Ok(new
             {
@@ -192,12 +190,12 @@ namespace COURSEPROJECT.Controllers
                 user.Email,
                 user.Bio,
                 user.Specialty,
-                Certificates = user.Certificates.Select(c => new
+                Certificates = user.Certificates.Select(c => new UserCertificateDto
                 {
-                    c.Id,
-                    c.FileName,
-                    c.FileUrl,
-                    c.UploadedAt
+                    Id = c.Id,
+                    FileUrl = c.FileUrl,
+                    FileName = c.FileName,
+                    UploadedAt = c.UploadedAt,
                 }).ToList()
             });
 
@@ -208,42 +206,41 @@ namespace COURSEPROJECT.Controllers
         {
             try
             {
-                // 1. جلب المستخدمين في دور Moderator
                 var moderators = await userManager.GetUsersInRoleAsync(StaticData.Moderator);
 
-                // 2. جلب المستخدمين غير المعتمدين فقط
                 var pendingModerators = moderators
                     .Where(u => u.IsApproved == false)
                     .ToList();
 
-                // 3. الحصول على معرفات المستخدمين
                 var userIds = pendingModerators.Select(u => u.Id).ToList();
 
-                // 4. جلب شهادات المستخدمين دفعة واحدة
                 var certificates = await context.UserCertificates
                     .Where(c => userIds.Contains(c.UserId))
                     .ToListAsync();
-
-                // 5. تشكيل النتيجة باستخدام DTOs مع ربط الشهادات
-                var result = pendingModerators.Select(u => new RegisterSupervisorDto
+             
+                var mappCourse = pendingModerators.Where(r => r != null).Select(r =>
                 {
-                    Id = u.Id,
-                    UserName = u.UserName,
-                    Email = u.Email,
-                    Bio = u.Bio,
-                    Specialty = u.Specialty,
-                    Certificates = certificates
-                        .Where(c => c.UserId == u.Id)
-                        .Select(c => new UserCertificateDto
+                    var dto = new RegisterSupervisorDto
+                    {
+                        Id = r.Id,
+                        UserName = r.UserName,
+                        Email = r.Email,
+                        Bio = r.Bio,
+                        Specialty = r.Specialty,
+                        Certificates = r.Certificates.Select(c => new UserCertificateDto
                         {
                             Id = c.Id,
                             FileUrl = c.FileUrl,
                             FileName = c.FileName,
-                            UploadedAt = c.UploadedAt
+                            UploadedAt = c.UploadedAt,
                         }).ToList()
-                }).ToList();
 
-                return Ok(result);
+                       
+                    };
+
+                    return dto;
+                });
+                return Ok(mappCourse);
             }
             catch (Exception ex)
             {

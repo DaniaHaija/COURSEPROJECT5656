@@ -17,11 +17,12 @@ namespace COURSEPROJECT.Controllers
     [Route("api/[controller]")]
     [ApiController]
 
-    public class CoursesController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IEmailSender emailSender) : ControllerBase
+    public class CoursesController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IEmailSender emailSender, CloudinaryService cloudinaryService) : ControllerBase
     {
         private readonly ApplicationDbContext _context = context;
         private readonly UserManager<ApplicationUser> userManager = userManager;
         private readonly IEmailSender emailSender = emailSender;
+        private readonly CloudinaryService cloudinaryService = cloudinaryService;
 
         [HttpGet("")]
         [AllowAnonymous]
@@ -55,45 +56,38 @@ namespace COURSEPROJECT.Controllers
                 return NotFound();
             }
 
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
 
-            var mappCourse = courses.ToList().Where(r => r != null).Select(r =>
+            var result = courses.ToList().Select(r => new CourseResponse
             {
-                var dto = new CourseResponse
+                ID = r.ID,
+                Title = r.Title,
+                Description = r.Description,
+                Image = r.Image,
+                Price = r.Price,
+                StartDate = r.StartDate,
+                EndDate = r.EndDate,
+                CategoryId = r.CategoryId,
+                CategoryName = r.Category?.Name,
+                UserId = r.UserId,
+                User = r.User?.UserName,
+                CourseMaterials = r.CourseMaterials?.Select(cm => new CourseMaterialResponse
                 {
-                    ID = r.ID,
-                    Title = r.Title,
-                    Description = r.Description,
-                    Image = string.IsNullOrEmpty(r.Image) ? null : $"{baseUrl}/images/{r.Image}",
-                    Price = r.Price,
-                    StartDate = r.StartDate,
-                    EndDate = r.EndDate,
-                    CategoryId = r.CategoryId,
-                    CategoryName = r.Category?.Name,
-                    UserId = r.UserId,
-                    User = r.User?.UserName,
-                    CourseMaterials = r.CourseMaterials?.Select(cm => new CourseMaterialResponse
+                    ID = cm.ID,
+                    CourseId = cm.CourseId,
+                    LiveStartTime = cm.LiveStartTime,
+                    Files = cm.CourseFiles?.Select(f => new CourseFile
                     {
-                        ID = cm.ID,
-                        CourseId = cm.CourseId,
-                        LiveStartTime = cm.LiveStartTime,
-                        Files = cm.CourseFiles?.Select(f => new CourseFile
-                        {
-                            ID = f.ID,
-                            FileName = f.FileName,
-                            FileType = f.FileType,
-                            FileUrl = $"{baseUrl}/Files/{f.FileUrl}",
-                            CourseMaterialId = f.CourseMaterialId
-                        }).ToList() ?? new List<CourseFile>() 
-                    }).ToList() ?? new List<CourseMaterialResponse>() 
-                };
-
-                return dto;
-            });
-
-            return Ok(mappCourse);
+                        ID = f.ID,
+                        FileName = f.FileName,
+                        FileType = f.FileType,
+                        FileUrl = f.FileUrl,
+                        CourseMaterialId = f.CourseMaterialId
+                    }).ToList() ?? new List<CourseFile>()
+                }).ToList() ?? new List<CourseMaterialResponse>()
+            }).ToList();
+            return Ok(result);
         }
-        [HttpGet("{id}")]
+            [HttpGet("{id}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
@@ -106,13 +100,14 @@ namespace COURSEPROJECT.Controllers
 
             if (course == null)
                 return NotFound(new { message = "Course not found" });
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+           
+
             var response = new CourseResponse
             {
                 ID = course.ID,
                 Title = course.Title,
                 Description = course.Description,
-                Image = string.IsNullOrEmpty(course.Image) ? null : $"{baseUrl}/images/{course.Image}",
+                Image = course.Image,
 
                 Price = course.Price,
                 StartDate = course.StartDate,
@@ -131,7 +126,7 @@ namespace COURSEPROJECT.Controllers
                         ID = f.ID,
                         FileName = f.FileName,
                         FileType = f.FileType,
-                        FileUrl = $"{baseUrl}/Files/{f.FileUrl}",
+                        FileUrl = f.FileUrl,
                         CourseMaterialId = f.CourseMaterialId
                     }).ToList()
                 }).ToList()
@@ -160,8 +155,9 @@ namespace COURSEPROJECT.Controllers
             {
                 return NotFound(new { message = "لا يوجد كورسات لهذا المستخدم." });
             }
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
 
+
+           
 
 
             var response = courses.Select(course => new CourseResponse
@@ -169,7 +165,7 @@ namespace COURSEPROJECT.Controllers
                 ID = course.ID,
                 Title = course.Title,
                 Description = course.Description,
-                Image = string.IsNullOrEmpty(course.Image) ? null : $"{baseUrl}/images/{course.Image}",
+                Image = course.Image,
 
                 Price = course.Price,
                 StartDate = course.StartDate,
@@ -188,7 +184,7 @@ namespace COURSEPROJECT.Controllers
                         ID = f.ID,
                         FileName = f.FileName,
                         FileType = f.FileType,
-                        FileUrl = $"{baseUrl}/Files/{f.FileUrl}",
+                        FileUrl = f.FileUrl,
                         CourseMaterialId = f.CourseMaterialId
                     }).ToList()
                 }).ToList()
@@ -228,15 +224,11 @@ namespace COURSEPROJECT.Controllers
             course.IsApproved = false;
             course.UserId = userId;
 
-            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images", fileName);
+            var uploadedUrl = await cloudinaryService.UploadFileAsync(file);
+            course.Image = uploadedUrl;
 
-            using (var stream = System.IO.File.Create(filePath))
-            {
-                file.CopyTo(stream);
-            }
 
-            course.Image = fileName;
+
             _context.Courses.Add(course);
             await _context.SaveChangesAsync();
 
@@ -263,7 +255,7 @@ namespace COURSEPROJECT.Controllers
         [HttpPut("{id}")]
         [Authorize(Roles = $"{StaticData.Moderator}")]
 
-        public IActionResult Update([FromRoute] int id, [FromForm] CourseUpdate courserequest)
+        public async Task< IActionResult> Update([FromRoute] int id, [FromForm] CourseUpdate courserequest)
         {
             var userId = User.FindFirst("id")?.Value;
             if (string.IsNullOrEmpty(userId))
@@ -292,21 +284,9 @@ namespace COURSEPROJECT.Controllers
             var file = courserequest.Image;
             if (file != null && file.Length > 0)
             {
-                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images", fileName);
+                var uploadedUrl = await cloudinaryService.UploadFileAsync(file);
+                course.Image = uploadedUrl;
 
-                using (var stream = System.IO.File.Create(filePath))
-                {
-                    file.CopyTo(stream);
-                }
-
-                var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "images", courseInDb.Image);
-                if (System.IO.File.Exists(oldFilePath))
-                {
-                    System.IO.File.Delete(oldFilePath);
-                }
-
-                course.Image = fileName;
             }
             else
             {
@@ -329,11 +309,7 @@ namespace COURSEPROJECT.Controllers
         {
             var course = _context.Courses.Find(id);
             if (course == null) { return NotFound(); }
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images", course.Image);
-
-
-            if (System.IO.File.Exists(filePath))
-                System.IO.File.Delete(filePath);
+           
             _context.Courses.Remove(course);
             _context.SaveChanges();
             return NoContent();
@@ -343,7 +319,6 @@ namespace COURSEPROJECT.Controllers
         [Authorize(Roles = $"{StaticData.Admin}")]
         public IActionResult GetPendingCourses()
         {
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
 
             var courses = _context.Courses
                 .Include(c => c.User)
@@ -357,7 +332,7 @@ namespace COURSEPROJECT.Controllers
                     ID = c.ID,
                     Title = c.Title,
                     Description = c.Description,
-                    Image = string.IsNullOrEmpty(c.Image) ? null : $"{baseUrl}/images/{c.Image}",
+                    Image = c.Image,
                     Price = c.Price,
                     StartDate = c.StartDate,
                     EndDate = c.EndDate,
@@ -375,7 +350,7 @@ namespace COURSEPROJECT.Controllers
                             ID = f.ID,
                             FileName = f.FileName,
                             FileType = f.FileType,
-                            FileUrl = $"{baseUrl}/Files/{f.FileUrl}",
+                            FileUrl = f.FileUrl,
                             CourseMaterialId = f.CourseMaterialId
                         }).ToList() ?? new List<CourseFile>()
                     }).ToList() ?? new List<CourseMaterialResponse>()

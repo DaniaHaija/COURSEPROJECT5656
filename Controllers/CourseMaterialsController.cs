@@ -13,10 +13,11 @@ namespace COURSEPROJECT.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{StaticData.Moderator}")]
-    public class CourseMaterialsController(ApplicationDbContext context) : ControllerBase
+   
+    public class CourseMaterialsController(ApplicationDbContext context, CloudinaryService cloudinaryService) : ControllerBase
     {
         private readonly ApplicationDbContext _context = context;
+        private readonly CloudinaryService cloudinaryService = cloudinaryService;
 
         [HttpGet("")]
         [Authorize]
@@ -29,7 +30,7 @@ namespace COURSEPROJECT.Controllers
             if (courseMaterials == null || !courseMaterials.Any())
                 return NotFound();
 
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+         
 
             var responses = courseMaterials.Select(cm => new CourseMaterialResponse
             {
@@ -41,7 +42,7 @@ namespace COURSEPROJECT.Controllers
                     ID= f.ID,
                     FileName = f.FileName,
                     FileType = f.FileType,
-                    FileUrl = $"{baseUrl}/Files/{f.FileUrl}",
+                    FileUrl = f.FileUrl,
                     CourseMaterialId = f.CourseMaterialId
                 }).ToList()
             }).ToList();
@@ -51,7 +52,7 @@ namespace COURSEPROJECT.Controllers
 
         [HttpGet("{id}")]
         [Authorize]
-        public IActionResult GetById([FromRoute] int id)
+        public async Task  <IActionResult> GetById([FromRoute] int id)
         {
             var courseMaterial = _context.CourseMaterials
                 .Include(cm => cm.CourseFiles)
@@ -60,7 +61,7 @@ namespace COURSEPROJECT.Controllers
             if (courseMaterial == null)
                 return NotFound();
 
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+          
 
             var response = new CourseMaterialResponse
             {
@@ -72,7 +73,7 @@ namespace COURSEPROJECT.Controllers
                     ID= f.ID,
                     FileName = f.FileName,
                     FileType = f.FileType,
-                    FileUrl = $"{baseUrl}/Files/{f.FileUrl}"
+                    FileUrl = f.FileUrl
                 }).ToList()
             };
 
@@ -81,61 +82,64 @@ namespace COURSEPROJECT.Controllers
 
         [RequestSizeLimit(100_000_000)]
 
-        [HttpPost("")]
-        public IActionResult Create([FromForm] CourseMateriaRequest request)
+        [HttpPost]
+        [Authorize(Roles = $"{StaticData.Moderator}")]
+        public async Task<IActionResult> Create([FromForm] CourseMateriaRequest request)
         {
-            var UserId = User.FindFirst("id")?.Value;
+            var userId = User.FindFirst("id")?.Value;
 
-            if (UserId == null)
+            if (userId == null)
                 return Unauthorized();
 
             if (request.Files == null || !request.Files.Any())
                 return BadRequest("يرجى رفع الملفات.");
-
+            for (int i = 0; i < request.Files.Count; i++)
+            {
+                Console.WriteLine($"File {i}: {request.Files[i]?.FileName}");
+                Console.WriteLine($"Type {i}: {request.FileTypes[i]}");
+            }
             if (request.FileTypes == null || request.FileTypes.Count != request.Files.Count)
                 return BadRequest("عدد الأنواع لا يطابق عدد الملفات.");
 
             var courseMaterial = new CourseMaterial
             {
                 CourseId = request.CourseId,
-           
-                LiveStartTime =request.LiveStartTime,
+                LiveStartTime = request.LiveStartTime,
+                CourseFiles = new List<CourseFile>() 
             };
 
             for (int i = 0; i < request.Files.Count; i++)
             {
                 var file = request.Files[i];
                 var fileType = request.FileTypes[i];
+               
+
 
                 if (file.Length > 0)
                 {
-                    var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Files", fileName);
-
-                    using (var stream = System.IO.File.Create(filePath))
-                    {
-                        file.CopyTo(stream);
-                    }
+                    
+                    var fileUrl = await cloudinaryService.UploadFileAsync(file);
 
                     courseMaterial.CourseFiles.Add(new CourseFile
                     {
                         FileName = file.FileName,
-                        FileUrl = fileName,
+                        FileUrl = fileUrl,
                         FileType = fileType
                     });
                 }
             }
 
             _context.CourseMaterials.Add(courseMaterial);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync(); 
 
             return CreatedAtAction(nameof(GetById), new { id = courseMaterial.ID }, courseMaterial);
         }
 
-        [RequestSizeLimit(100_000_000)] // 100 ميجابايت
 
+        [RequestSizeLimit(100_000_000)]
         [HttpPut("{id}")]
-        public IActionResult Update([FromRoute] int id, [FromForm] CourseMateriaRequest request)
+        [Authorize(Roles = $"{StaticData.Moderator}")]
+        public async Task<IActionResult> Update([FromRoute] int id, [FromForm] CourseMateriaRequest request)
         {
             var courseMaterial = _context.CourseMaterials
                 .Include(cm => cm.CourseFiles)
@@ -144,21 +148,14 @@ namespace COURSEPROJECT.Controllers
             if (courseMaterial == null)
                 return NotFound();
 
-
             var currentUserId = User.FindFirst("id")?.Value;
 
             if (currentUserId == null)
                 return Unauthorized();
 
+
             if (request.Files != null && request.Files.Count > 0)
             {
-                foreach (var file in courseMaterial.CourseFiles)
-                {
-                    var oldPath = Path.Combine(Directory.GetCurrentDirectory(), "Files", file.FileUrl);
-                    if (System.IO.File.Exists(oldPath))
-                        System.IO.File.Delete(oldPath);
-                }
-
                 _context.CourseFile.RemoveRange(courseMaterial.CourseFiles);
                 courseMaterial.CourseFiles.Clear();
 
@@ -166,20 +163,13 @@ namespace COURSEPROJECT.Controllers
                 {
                     var file = request.Files[i];
                     var fileType = request.FileTypes[i];
-
-                    var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Files", fileName);
-
-                    using (var stream = System.IO.File.Create(filePath))
-                    {
-                        file.CopyTo(stream);
-                    }
+                    var fileUrl = await cloudinaryService.UploadFileAsync(file);
 
                     courseMaterial.CourseFiles.Add(new CourseFile
                     {
                         FileName = file.FileName,
                         FileType = fileType,
-                        FileUrl = fileName
+                        FileUrl = fileUrl
                     });
                 }
             }
@@ -187,7 +177,7 @@ namespace COURSEPROJECT.Controllers
             courseMaterial.CourseId = request.CourseId;
             courseMaterial.LiveStartTime = request.LiveStartTime;
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             var response = new CourseMaterialResponse
             {
@@ -198,7 +188,7 @@ namespace COURSEPROJECT.Controllers
                 {
                     FileName = f.FileName,
                     FileType = f.FileType,
-                    FileUrl = Url.Content($"~/Files/{f.FileUrl}")
+                    FileUrl = f.FileUrl
                 }).ToList()
             };
 
@@ -206,8 +196,8 @@ namespace COURSEPROJECT.Controllers
         }
 
 
-
         [HttpDelete("{id}")]
+        [Authorize(Roles = $"{StaticData.Moderator}")]
         public IActionResult Delete([FromRoute] int id)
         {
             var courseMaterial = _context.CourseMaterials
@@ -217,12 +207,7 @@ namespace COURSEPROJECT.Controllers
             if (courseMaterial == null)
                 return NotFound();
 
-            foreach (var file in courseMaterial.CourseFiles)
-            {
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Files", file.FileUrl);
-                if (System.IO.File.Exists(filePath))
-                    System.IO.File.Delete(filePath);
-            }
+          
 
             _context.CourseFile.RemoveRange(courseMaterial.CourseFiles);
             _context.CourseMaterials.Remove(courseMaterial);

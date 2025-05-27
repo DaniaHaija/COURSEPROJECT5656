@@ -1,4 +1,4 @@
-﻿namespace COURSEPROJECT.Services
+﻿namespace COURSEPROJECT.Cloud
 {
     public class CloudinarySettings
     {

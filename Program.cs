@@ -16,6 +16,7 @@ using System.Text;
 using Microsoft.Extensions.FileProviders;
 using System.Security.Claims;
 using COURSEPROJECT.Services.IServices;
+using COURSEPROJECT.Cloud;
 
 
 namespace COURSEPROJECT
@@ -65,10 +66,12 @@ namespace COURSEPROJECT
             builder.Services.AddScoped<ICourseService, CourseService>();
 
 
+            builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+            builder.Services.AddScoped<CloudinaryService>();
 
 
 
-           
+
             builder.Services.AddSwaggerGen();
             builder.Services.AddScoped<IDBInitlizer, DBInitlizer>();
 
@@ -140,6 +143,13 @@ app.UseStaticFiles(new StaticFileOptions
                 FileProvider = new PhysicalFileProvider(
                  Path.Combine(Directory.GetCurrentDirectory(), "images")),
                 RequestPath = "/images"
+            });
+            app.UseStaticFiles();
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(
+                 Path.Combine(Directory.GetCurrentDirectory(), "uplode")),
+                RequestPath = "/uplode"
             });
 
             app.Run();
