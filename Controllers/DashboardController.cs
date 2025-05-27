@@ -16,13 +16,16 @@ namespace COURSEPROJECT.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class DashboardController(ApplicationDbContext context) : ControllerBase
+    public class DashboardController(ApplicationDbContext context, CloudinaryService cloudinaryService) : ControllerBase
     {
         private readonly ApplicationDbContext context = context;
+        private readonly CloudinaryService cloudinaryService = cloudinaryService;
+
         [HttpGet("")]
         public IActionResult Index()
         {
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+           
+
             var viewModel = new DashboardViewModel
             {
 
@@ -55,13 +58,13 @@ namespace COURSEPROJECT.Controllers
                             ID = cm.ID,
                             CourseId = cm.CourseId,
                             LiveStartTime = cm.LiveStartTime,
-                            Files = cm.CourseFiles.Select(f => new CourseFile
+                            Files = cm.CourseFiles.Select(f => new CourseFileResponse
                             {
                                 ID = f.ID,
                                 FileName = f.FileName,
                                 FileType = f.FileType,
-                                FileUrl = $"{baseUrl}/Files/{f.FileUrl}",
-                                CourseMaterialId = f.CourseMaterialId
+                                FileUrl = f.FileUrl,
+                              
                             }).ToList()
                         }).ToList()
 

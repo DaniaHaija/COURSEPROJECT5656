@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic.FileIO;
 
 namespace COURSEPROJECT.Controllers
 {
@@ -37,13 +38,14 @@ namespace COURSEPROJECT.Controllers
                 ID = cm.ID,
                 CourseId = cm.CourseId,
                 LiveStartTime = cm.LiveStartTime,
-                Files = cm.CourseFiles.Select(f => new CourseFile
+                Files = cm.CourseFiles.Select(f => new CourseFileResponse
                 {
                     ID= f.ID,
                     FileName = f.FileName,
                     FileType = f.FileType,
                     FileUrl = f.FileUrl,
-                    CourseMaterialId = f.CourseMaterialId
+                    CourseMaterialId=f.CourseMaterialId
+                    
                 }).ToList()
             }).ToList();
 
@@ -68,71 +70,90 @@ namespace COURSEPROJECT.Controllers
                 ID = courseMaterial.ID,
                 CourseId = courseMaterial.CourseId,
                 LiveStartTime = courseMaterial.LiveStartTime,
-                Files = courseMaterial.CourseFiles.Select(f => new CourseFile
+                Files = courseMaterial.CourseFiles.Select(f => new CourseFileResponse
                 {
                     ID= f.ID,
                     FileName = f.FileName,
                     FileType = f.FileType,
-                    FileUrl = f.FileUrl
+                    FileUrl = f.FileUrl,
+                     CourseMaterialId = f.CourseMaterialId
                 }).ToList()
             };
 
             return Ok(response);
         }
-
         [RequestSizeLimit(100_000_000)]
 
         [HttpPost]
         [Authorize(Roles = $"{StaticData.Moderator}")]
         public async Task<IActionResult> Create([FromForm] CourseMateriaRequest request)
         {
-            var userId = User.FindFirst("id")?.Value;
-
-            if (userId == null)
-                return Unauthorized();
-
-            if (request.Files == null || !request.Files.Any())
-                return BadRequest("يرجى رفع الملفات.");
-            for (int i = 0; i < request.Files.Count; i++)
+            try
             {
-                Console.WriteLine($"File {i}: {request.Files[i]?.FileName}");
-                Console.WriteLine($"Type {i}: {request.FileTypes[i]}");
-            }
-            if (request.FileTypes == null || request.FileTypes.Count != request.Files.Count)
-                return BadRequest("عدد الأنواع لا يطابق عدد الملفات.");
+                var userId = User.FindFirst("id")?.Value;
+                if (userId == null)
+                    return Unauthorized();
 
-            var courseMaterial = new CourseMaterial
-            {
-                CourseId = request.CourseId,
-                LiveStartTime = request.LiveStartTime,
-                CourseFiles = new List<CourseFile>() 
-            };
+                if (request.Files == null || !request.Files.Any())
+                    return BadRequest("يرجى رفع الملفات.");
 
-            for (int i = 0; i < request.Files.Count; i++)
-            {
-                var file = request.Files[i];
-                var fileType = request.FileTypes[i];
-               
+                if (request.FileTypes == null || request.FileTypes.Count != request.Files.Count)
+                    return BadRequest("عدد الأنواع لا يطابق عدد الملفات.");
 
-
-                if (file.Length > 0)
+                var courseMaterial = new CourseMaterial
                 {
-                    
-                    var fileUrl = await cloudinaryService.UploadFileAsync(file);
+                    CourseId = request.CourseId,
+                    LiveStartTime = request.LiveStartTime,
+                    CourseFiles = new List<CourseFile>()
+                };
 
-                    courseMaterial.CourseFiles.Add(new CourseFile
+                for (int i = 0; i < request.Files.Count; i++)
+                {
+                    var file = request.Files[i];
+                    var fileType = request.FileTypes[i];
+
+                    if (file.Length > 0)
                     {
-                        FileName = file.FileName,
-                        FileUrl = fileUrl,
-                        FileType = fileType
-                    });
+                        var fileUrl = await cloudinaryService.UploadFileAsync(file);
+
+                        courseMaterial.CourseFiles.Add(new CourseFile
+                        {
+                            FileName = file.FileName,
+                            FileUrl = fileUrl,
+                            FileType = fileType,
+                            CourseMaterialId = courseMaterial.ID
+                        });
+                    }
                 }
+
+                _context.CourseMaterials.Add(courseMaterial);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetById), new { id = courseMaterial.ID }, new CourseMaterialResponse
+                {
+                    ID = courseMaterial.ID,
+                    CourseId = courseMaterial.CourseId,
+                    Files = courseMaterial.CourseFiles.Select(f => new CourseFileResponse
+                    {
+                        ID = f.ID,
+                        FileName = f.FileName,
+                        FileUrl = f.FileUrl,
+                        FileType = f.FileType,
+
+
+                          CourseMaterialId = f.CourseMaterialId
+                    }).ToList()
+                });
             }
-
-            _context.CourseMaterials.Add(courseMaterial);
-            await _context.SaveChangesAsync(); 
-
-            return CreatedAtAction(nameof(GetById), new { id = courseMaterial.ID }, courseMaterial);
+            catch (Exception ex)
+            {
+                // يمكنك هنا تسجيل الخطأ في لوج الخاص بك إذا أردت
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "حدث خطأ أثناء معالجة الطلب.",
+                    detail = ex.Message
+                });
+            }
         }
 
 
@@ -169,7 +190,8 @@ namespace COURSEPROJECT.Controllers
                     {
                         FileName = file.FileName,
                         FileType = fileType,
-                        FileUrl = fileUrl
+                        FileUrl = fileUrl,
+                      CourseMaterialId= courseMaterial.ID
                     });
                 }
             }
@@ -184,11 +206,13 @@ namespace COURSEPROJECT.Controllers
                 ID = courseMaterial.ID,
                 CourseId = courseMaterial.CourseId,
                 LiveStartTime = courseMaterial.LiveStartTime,
-                Files = courseMaterial.CourseFiles.Select(f => new CourseFile
+                Files = courseMaterial.CourseFiles.Select(f => new CourseFileResponse
                 {
+                    ID= f.ID,
                     FileName = f.FileName,
                     FileType = f.FileType,
-                    FileUrl = f.FileUrl
+                    FileUrl = f.FileUrl,
+                     CourseMaterialId = f.CourseMaterialId
                 }).ToList()
             };
 

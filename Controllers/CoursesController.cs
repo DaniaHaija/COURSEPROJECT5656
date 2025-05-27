@@ -75,14 +75,14 @@ namespace COURSEPROJECT.Controllers
                     ID = cm.ID,
                     CourseId = cm.CourseId,
                     LiveStartTime = cm.LiveStartTime,
-                    Files = cm.CourseFiles?.Select(f => new CourseFile
+                    Files = cm.CourseFiles?.Select(f => new CourseFileResponse
                     {
                         ID = f.ID,
                         FileName = f.FileName,
                         FileType = f.FileType,
                         FileUrl = f.FileUrl,
                         CourseMaterialId = f.CourseMaterialId
-                    }).ToList() ?? new List<CourseFile>()
+                    }).ToList() ?? new List<CourseFileResponse>()
                 }).ToList() ?? new List<CourseMaterialResponse>()
             }).ToList();
             return Ok(result);
@@ -121,7 +121,7 @@ namespace COURSEPROJECT.Controllers
                     ID = cm.ID,
                     CourseId = cm.CourseId,
                     LiveStartTime = cm.LiveStartTime,
-                    Files = cm.CourseFiles.Select(f => new CourseFile
+                    Files = cm.CourseFiles.Select(f => new CourseFileResponse
                     {
                         ID = f.ID,
                         FileName = f.FileName,
@@ -179,7 +179,7 @@ namespace COURSEPROJECT.Controllers
                     ID = cm.ID,
                     CourseId = cm.CourseId,
                     LiveStartTime = cm.LiveStartTime,
-                    Files = cm.CourseFiles.Select(f => new CourseFile
+                    Files = cm.CourseFiles.Select(f => new CourseFileResponse
                     {
                         ID = f.ID,
                         FileName = f.FileName,
@@ -345,14 +345,14 @@ namespace COURSEPROJECT.Controllers
                         ID = cm.ID,
                         CourseId = cm.CourseId,
                         LiveStartTime = cm.LiveStartTime,
-                        Files = cm.CourseFiles?.Select(f => new CourseFile
+                        Files = cm.CourseFiles?.Select(f => new CourseFileResponse
                         {
                             ID = f.ID,
                             FileName = f.FileName,
                             FileType = f.FileType,
                             FileUrl = f.FileUrl,
                             CourseMaterialId = f.CourseMaterialId
-                        }).ToList() ?? new List<CourseFile>()
+                        }).ToList() ?? new List<CourseFileResponse>()
                     }).ToList() ?? new List<CourseMaterialResponse>()
                 }).ToList();
 
